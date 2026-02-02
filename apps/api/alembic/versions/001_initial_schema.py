@@ -1,4 +1,4 @@
-"""Initial schema with all tables
+"""Initial schema with all tables (non-PostGIS version)
 
 Revision ID: 001
 Revises:
@@ -9,7 +9,6 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-import geoalchemy2
 from sqlalchemy.dialects import postgresql
 
 revision: str = '001'
@@ -19,9 +18,6 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Enable PostGIS extension
-    op.execute('CREATE EXTENSION IF NOT EXISTS postgis')
-
     # sources table
     op.create_table(
         'sources',
@@ -44,7 +40,7 @@ def upgrade() -> None:
         sa.Column('hash', sa.Text()),
     )
 
-    # nrhp_points table
+    # nrhp_points table (using lat/lon instead of geometry)
     op.create_table(
         'nrhp_points',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
@@ -57,20 +53,23 @@ def upgrade() -> None:
         sa.Column('nara_url', sa.Text()),
         sa.Column('edit_date', sa.Text()),
         sa.Column('source', sa.Text()),
-        sa.Column('geometry', geoalchemy2.Geometry(geometry_type='POINT', srid=4326)),
+        sa.Column('lon', sa.Float()),
+        sa.Column('lat', sa.Float()),
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now()),
         sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.func.now()),
     )
-    op.create_index('idx_nrhp_points_geometry', 'nrhp_points', ['geometry'], postgresql_using='gist')
+    op.create_index('idx_nrhp_points_lat', 'nrhp_points', ['lat'])
+    op.create_index('idx_nrhp_points_lon', 'nrhp_points', ['lon'])
     op.create_index('idx_nrhp_points_state', 'nrhp_points', ['state'])
 
-    # targets table
+    # targets table (using lat/lon instead of geometry)
     op.create_table(
         'targets',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('name', sa.Text()),
         sa.Column('target_type', sa.Text()),
-        sa.Column('geometry', geoalchemy2.Geometry(geometry_type='POINT', srid=4326)),
+        sa.Column('lon', sa.Float()),
+        sa.Column('lat', sa.Float()),
         sa.Column('black_sky_score', sa.Integer(), server_default='0'),
         sa.Column('confidence', sa.Float(), server_default='0.5'),
         sa.Column('review_status', sa.Text(), server_default="'unreviewed'"),
@@ -78,7 +77,8 @@ def upgrade() -> None:
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now()),
         sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.func.now()),
     )
-    op.create_index('idx_targets_geometry', 'targets', ['geometry'], postgresql_using='gist')
+    op.create_index('idx_targets_lat', 'targets', ['lat'])
+    op.create_index('idx_targets_lon', 'targets', ['lon'])
     op.create_index('idx_targets_review_status', 'targets', ['review_status'])
     op.create_index('idx_targets_black_sky_score', 'targets', ['black_sky_score'])
 

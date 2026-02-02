@@ -6,7 +6,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from geoalchemy2 import Geometry
 from database import Base
 
 
@@ -49,14 +48,10 @@ class NRHPPoint(Base):
     nara_url = Column(Text)
     edit_date = Column(Text)
     source = Column(Text)
-    geometry = Column(Geometry("POINT", srid=4326))
+    lon = Column(Float)
+    lat = Column(Float)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    __table_args__ = (
-        Index("idx_nrhp_points_geometry", "geometry", postgresql_using="gist"),
-        Index("idx_nrhp_points_nris_refnum", "nris_refnum", postgresql_where="nris_refnum IS NOT NULL"),
-    )
 
 
 class Target(Base):
@@ -65,7 +60,8 @@ class Target(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(Text)
     target_type = Column(Text)
-    geometry = Column(Geometry("POINT", srid=4326))
+    lon = Column(Float)
+    lat = Column(Float)
     black_sky_score = Column(Integer, default=0)
     confidence = Column(Float, default=0.5)
     review_status = Column(Text, default="unreviewed")  # unreviewed|pursue|monitor|archive
@@ -74,12 +70,6 @@ class Target(Base):
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
     flags = relationship("TargetFlag", back_populates="target", uselist=False)
-
-    __table_args__ = (
-        Index("idx_targets_geometry", "geometry", postgresql_using="gist"),
-        Index("idx_targets_review_status", "review_status"),
-        Index("idx_targets_black_sky_score", "black_sky_score"),
-    )
 
 
 class TargetFlag(Base):

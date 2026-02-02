@@ -58,10 +58,11 @@ def get_nrhp_points(
             status,
             is_nhl,
             nara_url,
-            ST_X(geometry) as lon,
-            ST_Y(geometry) as lat
+            lon,
+            lat
         FROM nrhp_points
-        WHERE geometry && ST_MakeEnvelope(:min_lon, :min_lat, :max_lon, :max_lat, 4326)
+        WHERE lon >= :min_lon AND lon <= :max_lon
+          AND lat >= :min_lat AND lat <= :max_lat
         LIMIT :limit
     """)
 
@@ -115,14 +116,17 @@ def get_targets(
         "limit": limit
     }
 
-    where_clauses = ["geometry && ST_MakeEnvelope(:min_lon, :min_lat, :max_lon, :max_lat, 4326)"]
+    where_clauses = [
+        "t.lon >= :min_lon AND t.lon <= :max_lon",
+        "t.lat >= :min_lat AND t.lat <= :max_lat"
+    ]
 
     if review_status:
-        where_clauses.append("review_status = :review_status")
+        where_clauses.append("t.review_status = :review_status")
         params["review_status"] = review_status
 
     if min_score is not None:
-        where_clauses.append("black_sky_score >= :min_score")
+        where_clauses.append("t.black_sky_score >= :min_score")
         params["min_score"] = min_score
 
     where_sql = " AND ".join(where_clauses)
@@ -136,8 +140,8 @@ def get_targets(
             t.confidence,
             t.review_status,
             t.review_notes,
-            ST_X(t.geometry) as lon,
-            ST_Y(t.geometry) as lat,
+            t.lon,
+            t.lat,
             tf.nrhp_near_count_1km,
             tf.nrhp_min_distance_m,
             tf.nrhp_has_nhl_nearby_1km
@@ -186,8 +190,8 @@ def get_target(target_id: UUID, db: Session = Depends(get_db)):
             confidence,
             review_status,
             review_notes,
-            ST_X(geometry) as lon,
-            ST_Y(geometry) as lat,
+            lon,
+            lat,
             created_at,
             updated_at
         FROM targets
@@ -278,14 +282,17 @@ def export_csv(
         "max_lat": max_lat
     }
 
-    where_clauses = ["geometry && ST_MakeEnvelope(:min_lon, :min_lat, :max_lon, :max_lat, 4326)"]
+    where_clauses = [
+        "t.lon >= :min_lon AND t.lon <= :max_lon",
+        "t.lat >= :min_lat AND t.lat <= :max_lat"
+    ]
 
     if review_status:
-        where_clauses.append("review_status = :review_status")
+        where_clauses.append("t.review_status = :review_status")
         params["review_status"] = review_status
 
     if min_score is not None:
-        where_clauses.append("black_sky_score >= :min_score")
+        where_clauses.append("t.black_sky_score >= :min_score")
         params["min_score"] = min_score
 
     where_sql = " AND ".join(where_clauses)
@@ -295,8 +302,8 @@ def export_csv(
             t.id,
             t.name,
             t.target_type,
-            ST_Y(t.geometry) as lat,
-            ST_X(t.geometry) as lon,
+            t.lat,
+            t.lon,
             t.review_status,
             t.black_sky_score,
             tf.nrhp_near_count_1km,

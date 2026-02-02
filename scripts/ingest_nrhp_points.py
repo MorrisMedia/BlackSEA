@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Ingest NRHP points from ArcGIS REST API into PostGIS database.
+Ingest NRHP points from ArcGIS REST API into database.
 Handles pagination and upserts using NRIS_Refnum as natural key.
 """
 
@@ -137,18 +137,17 @@ def upsert_nrhp_point(session, feature: dict) -> bool:
         "updated_at": datetime.utcnow()
     }
 
-    # Upsert using ON CONFLICT
+    # Upsert using ON CONFLICT (non-PostGIS version)
     session.execute(
         text("""
             INSERT INTO nrhp_points (
                 id, nris_refnum, resname, state, county, status,
-                is_nhl, nara_url, edit_date, source, geometry,
+                is_nhl, nara_url, edit_date, source, lon, lat,
                 created_at, updated_at
             )
             VALUES (
                 :id, :nris_refnum, :resname, :state, :county, :status,
-                :is_nhl, :nara_url, :edit_date, :source,
-                ST_SetSRID(ST_MakePoint(:lon, :lat), 4326),
+                :is_nhl, :nara_url, :edit_date, :source, :lon, :lat,
                 :created_at, :updated_at
             )
             ON CONFLICT (nris_refnum)
@@ -161,7 +160,8 @@ def upsert_nrhp_point(session, feature: dict) -> bool:
                 nara_url = EXCLUDED.nara_url,
                 edit_date = EXCLUDED.edit_date,
                 source = EXCLUDED.source,
-                geometry = EXCLUDED.geometry,
+                lon = EXCLUDED.lon,
+                lat = EXCLUDED.lat,
                 updated_at = EXCLUDED.updated_at
         """),
         {

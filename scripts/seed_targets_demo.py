@@ -37,12 +37,9 @@ def get_ca_nrhp_points(session, limit: int = 500) -> list:
     """Get NRHP points from California."""
     result = session.execute(
         text("""
-            SELECT
-                ST_X(geometry) as lon,
-                ST_Y(geometry) as lat,
-                resname
+            SELECT lon, lat, resname
             FROM nrhp_points
-            WHERE state = 'CA'
+            WHERE state = 'CALIFORNIA'
             LIMIT :limit
         """),
         {"limit": limit}
@@ -75,13 +72,12 @@ def create_demo_target(session, base_lon: float, base_lat: float, index: int) ->
     session.execute(
         text("""
             INSERT INTO targets (
-                id, name, target_type, geometry,
+                id, name, target_type, lon, lat,
                 black_sky_score, confidence, review_status,
                 created_at, updated_at
             )
             VALUES (
-                :id, :name, :target_type,
-                ST_SetSRID(ST_MakePoint(:lon, :lat), 4326),
+                :id, :name, :target_type, :lon, :lat,
                 :black_sky_score, :confidence, 'unreviewed',
                 :created_at, :updated_at
             )
@@ -150,8 +146,7 @@ def seed_targets():
         # Show sample
         sample = session.execute(
             text("""
-                SELECT name, target_type, black_sky_score, review_status,
-                       ST_X(geometry) as lon, ST_Y(geometry) as lat
+                SELECT name, target_type, black_sky_score, review_status, lon, lat
                 FROM targets
                 LIMIT 5
             """)
