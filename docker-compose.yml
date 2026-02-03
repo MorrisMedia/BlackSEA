@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16
+    container_name: bsdip-db
+    environment:
+      POSTGRES_DB: bsdip
+      POSTGRES_USER: bsdip
+      POSTGRES_PASSWORD: bsdip_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bsdip -d bsdip"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: ./apps/api
+    container_name: bsdip-api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://bsdip:bsdip_dev_password@db:5432/bsdip
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./apps/api:/app
+    command: >
+      sh -c "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+
+  web:
+    build:
+      context: ./apps/web
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+        NEXT_PUBLIC_MAPBOX_TOKEN: ${MAPBOX_TOKEN:-pk.eyJ1IjoiYXNhYXNpbiIsImEiOiJjbWw1a3l4bnAwNHV1M2RwcndxMWZ5cDA0In0.HWWEs0Tr28zdowuC5htYBw}
+    container_name: bsdip-web
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_MAPBOX_TOKEN: ${MAPBOX_TOKEN:-pk.eyJ1IjoiYXNhYXNpbiIsImEiOiJjbWw1a3l4bnAwNHV1M2RwcndxMWZ5cDA0In0.HWWEs0Tr28zdowuC5htYBw}
+    depends_on:
+      - api
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+
+volumes:
+  pgdata:
