@@ -10,6 +10,7 @@ Uses Haversine formula for distance calculation (no PostGIS required).
 """
 
 import math
+import os
 import uuid
 from datetime import datetime
 
@@ -17,7 +18,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 # Configuration
-DATABASE_URL = "postgresql://bsdip:bsdip_dev_password@localhost:5432/bsdip"
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://bsdip:bsdip_dev_password@localhost:5432/bsdip")
 PROXIMITY_RADIUS_M = 1000  # 1km radius
 
 # Approximate degree to km conversion (varies by latitude)

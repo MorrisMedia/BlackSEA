@@ -4,6 +4,7 @@ Seed demo targets by sampling NRHP points in California and jittering coordinate
 Creates 50-200 demo targets for testing the flagging system.
 """
 
+import os
 import random
 import uuid
 from datetime import datetime
@@ -12,7 +13,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 # Configuration
-DATABASE_URL = "postgresql://bsdip:bsdip_dev_password@localhost:5432/bsdip"
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://bsdip:bsdip_dev_password@localhost:5432/bsdip")
 TARGET_COUNT = 150  # Number of demo targets to create
 JITTER_RANGE = 0.02  # ~2km jitter in degrees
 

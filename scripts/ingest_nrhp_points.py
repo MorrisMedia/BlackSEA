@@ -12,12 +12,13 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
+import os
 import httpx
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 # Configuration
-DATABASE_URL = "postgresql://bsdip:bsdip_dev_password@localhost:5432/bsdip"
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://bsdip:bsdip_dev_password@localhost:5432/bsdip")
 NRHP_QUERY_URL = "https://mapservices.nps.gov/arcgis/rest/services/cultural_resources/nrhp_locations/MapServer/0/query"
 PAGE_SIZE = 2000
 OUT_FIELDS = "RESNAME,NRIS_Refnum,State,County,STATUS,Is_NHL,NARA_URL,PROPERTY_ID,CR_ID,GEOM_ID,EDIT_DATE,SOURCE"
